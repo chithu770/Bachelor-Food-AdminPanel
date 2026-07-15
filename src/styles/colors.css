@@ -1,0 +1,70 @@
+:root,
+[data-theme="light"] {
+  /* ── Primary ─────────────────────────────────────── */
+  --ember: #ea580c;
+  --ember-dark: #c2410c;
+  --ember-light: #fed7aa;
+  --ember-faint: #fff7ed;
+
+  /* ── Secondary & accents ─────────────────────────── */
+  --saffron: #f59e0b;
+  --saffron-light: #fef3c7;
+  --leaf: #16a34a;
+  --leaf-light: #dcfce7;
+  --sky: #0ea5e9;
+  --sky-light: #e0f2fe;
+  --violet: #8b5cf6;
+  --violet-light: #ede9fe;
+  --rose: #e11d48;
+  --rose-light: #ffe4e6;
+  --lime: #65a30d;
+  --lime-light: #ecfccb;
+
+  /* ── Neutrals (slate family) ─────────────────────── */
+  --slate-50:  #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --slate-950: #020617;
+
+  /* ── Semantic ────────────────────────────────────── */
+  --danger:       #dc2626;
+  --danger-light: #fee2e2;
+  --white:        #ffffff;
+  --black:        #000000;
+
+  /* ── Atoms — badge live-colour classes ────────────── */
+  --c-ember-bg     : #fff7ed;
+  --c-ember-text   : #9a3412;
+  --c-ember-border : #fed7aa;
+
+  --c-saffron-bg   : #fffbeb;
+  --c-saffron-text : #92400e;
+  --c-saffron-border: #fde68a;
+
+  --c-leaf-bg      : #f0fdf4;
+  --c-leaf-text    : #166534;
+  --c-leaf-border  : #bbf7d0;
+
+  --c-sky-bg       : #f0f9ff;
+  --c-sky-text     : #075985;
+  --c-sky-border   : #bae6fd;
+
+  --c-violet-bg    : #f5f3ff;
+  --c-violet-text  : #5b21b6;
+  --c-violet-border: #ddd6fe;
+
+  --c-rose-bg      : #fff1f2;
+  --c-rose-text    : #9f1239;
+  --c-rose-border  : #fecdd3;
+
+  --c-lime-bg      : #f7fee7;
+  --c-lime-text    : #3f6212;
+  --c-lime-border  : #d9f99d;
+}

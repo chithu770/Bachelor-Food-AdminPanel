@@ -1,0 +1,230 @@
+rules_version = '2';
+
+// ════════════════════════════════════════════════════════════
+//  Bachelor Foods — Firestore Security Rules
+//  Covers: Customer app, Delivery Partner app, Restaurant app, Admin dashboard
+// ════════════════════════════════════════════════════════════
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function getUserRole() {
+      return (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))) 
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role 
+        : null;
+    }
+
+    function isAdmin() {
+      return (request.auth != null && request.auth.uid == "rC7fqyqk9XQnHXsosqx1iJqq1gx2") || getUserRole() in ["admin", "super_admin"];
+    }
+
+    // ── Users ──
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+      // Restaurant/delivery dashboards need to read customer info
+      // (name, phone, address) while preparing/assigning orders.
+      allow read: if isSignedIn();
+    }
+
+    // ── Carts ──
+    match /carts/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin() || getUserRole() == "manager" || getUserRole() == "staff";
+      
+      match /items/{itemId} {
+        allow read, write: if isOwner(userId) || isAdmin() || getUserRole() == "manager" || getUserRole() == "staff";
+      }
+    }
+
+    // ── Orders ──
+    match /orders/{orderId} {
+      allow create: if isSignedIn() && (isAdmin() || request.resource.data.userId == request.auth.uid);
+      allow read, update, delete: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid ||
+        resource.data.restaurantId == request.auth.uid ||
+        resource.data.hotelId == request.auth.uid ||
+        resource.data.deliveryPartnerId == request.auth.uid
+      );
+    }
+
+    // ── Subscriptions ──
+    // Structure: subscriptions/{weekly_subscriptions|monthly_subscriptions|weekly_assignments}/documents/{docId}
+    match /subscriptions/{planTypeDoc} {
+      allow read, write: if isSignedIn();
+
+      match /documents/{docId} {
+        // Customer can read/update their own subscription docs.
+        // Delivery partners & restaurant staff need read access for
+        // assignment + collection tracking, so any signed-in user
+        // may read; writes are restricted to the owner or to
+        // updates that don't change the userId.
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && (request.resource.data.userId == request.auth.uid || isAdmin());
+        allow update, delete: if isSignedIn() &&
+          (resource.data.userId == request.auth.uid || isAdmin() || !('userId' in request.resource.data) ||
+           request.resource.data.userId == resource.data.userId);
+      }
+    }
+
+    // ── Subscription Collections (delivery partner cash collections) ──
+    match /subscription_collections/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // ── Weekly Assignments (top-level, used by delivery transfer flow) ──
+    match /weekly_assignments/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // ── Delivery Partners / Delivery Users ──
+    match /delivery_partners/{partnerId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(partnerId) || isAdmin();
+    }
+    match /delivery_users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // ── Transfer Requests ──
+    match /transfer_requests/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // ── Hotels / Restaurants ──
+    match /hotels/{hotelId} {
+      allow read: if true;
+      allow write: if isAdmin() || isOwner(hotelId);
+
+      match /{subcollection=**} {
+        allow read: if true;
+        allow write: if isAdmin() || isOwner(hotelId);
+      }
+    }
+
+    // ── Products / Foods / Categories / Sub-categories / Addons ──
+    match /products/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (isAdmin() || isOwner(request.resource.data.hotelId) || isOwner(request.resource.data.restaurantId));
+      allow update, delete: if isSignedIn() && (isAdmin() || isOwner(resource.data.hotelId) || isOwner(resource.data.restaurantId));
+    }
+    match /foods/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (isAdmin() || isOwner(request.resource.data.hotelId) || isOwner(request.resource.data.restaurantId));
+      allow update, delete: if isSignedIn() && (isAdmin() || isOwner(resource.data.hotelId) || isOwner(resource.data.restaurantId));
+    }
+    match /categories/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (isAdmin() || isOwner(request.resource.data.hotelId) || isOwner(request.resource.data.restaurantId));
+      allow update, delete: if isSignedIn() && (isAdmin() || isOwner(resource.data.hotelId) || isOwner(resource.data.restaurantId));
+    }
+    match /sub_categories/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (isAdmin() || isOwner(request.resource.data.hotelId) || isOwner(request.resource.data.restaurantId));
+      allow update, delete: if isSignedIn() && (isAdmin() || isOwner(resource.data.hotelId) || isOwner(resource.data.restaurantId));
+    }
+    match /addons/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (isAdmin() || isOwner(request.resource.data.hotelId) || isOwner(request.resource.data.restaurantId));
+      allow update, delete: if isSignedIn() && (isAdmin() || isOwner(resource.data.hotelId) || isOwner(resource.data.restaurantId));
+    }
+
+    // ── Reviews ──
+    match /reviews/{docId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // ── Chats / Messages (delivery partner <-> customer/restaurant chat) ──
+    match /chats/{chatId} {
+      allow read, write: if isSignedIn();
+
+      match /messages/{messageId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+    match /messages/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // ── Employees / Employee Roles (restaurant staff management) ──
+    match /employees/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /employee_roles/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // ── Wallet Transactions ──
+    match /wallet_transactions/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // ── Admin-facing Marketing and Configuration Collections ──
+    match /chattings/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /contact_messages/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /banners/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /cashback_offers/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /push_notifications/{docId} {
+      allow read, write: if isAdmin() || getUserRole() == "manager";
+    }
+    match /disbursements/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /subscribed_mail_list/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /loyalty_points/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /foodCategories/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /shifts/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /vehicles/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /zones/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /cuisines/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /coupons/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /campaigns/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

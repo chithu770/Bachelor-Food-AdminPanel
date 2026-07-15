@@ -1,0 +1,93 @@
+/* ───────────────────────────────────────────────────────────────
+   SEMANTIC ALIASES
+   Wraps tokens.css and colors.css into human-readable names
+   used by component classes in index.css.
+   ─────────────────────────────────────────────────────────────── */
+
+/* ── Components ── */
+
+/* Buttons */
+--btn-padding-x  : var(--t-4);
+--btn-padding-y  : var(--t-2);
+--btn-radius     : var(--r-md);
+--btn-font-weight: var(--font-bold);
+--btn-font-size  : var(--text-sm);
+--btn-line-height: var(--leading-none);
+--btn-transition : var(--transition-fast);
+
+/* Panels & cards */
+--panel-radius     : var(--r-md);
+--panel-padding    : var(--t-5);
+--panel-border     : var(--slate-200);
+--panel-bg         : var(--white);
+--panel-shadow     : var(--shadow-sm);
+--card-hover-shadow: var(--shadow-soft);
+
+/* Inputs */
+--input-padding-x: var(--t-3);
+--input-padding-y: var(--t-2);
+--input-height    : var(--t-10);
+--input-radius    : var(--r-md);
+--input-border    : var(--slate-200);
+--input-border-focus: var(--ember);
+--input-ring-focus : var(--t-1);
+--input-ring-color : #fee2e2;  /* red-100 equivalent */
+--input-placeholder: var(--slate-400);
+--input-text       : var(--slate-900);
+
+/* Nav */
+--nav-link-radius  : var(--r-md);
+--nav-link-padding-y: var(--t-2-5);
+--nav-link-padding-x: var(--t-3);
+--nav-link-active-border : var(--ember-faint);
+--nav-link-active-text   : var(--ember);
+--nav-link-active-bg     : #fef2f2;  /* red-50 */
+
+/* Metric card */
+--metric-padding  : var(--t-4);
+--metric-border   : var(--slate-200);
+--metric-shadow   : var(--shadow-sm);
+--metric-title-color: var(--slate-500);
+--metric-value-color: var(--slate-950);
+--metric-icon-size : var(--t-5);
+
+/* Toast / Alert */
+--toast-shadow    : var(--shadow-soft);
+--toast-success-icon: var(--leaf);
+--toast-error-icon  : var(--ember);
+--toast-bg       : var(--white);
+--alert-error-bg : #fef2f2;   /* red-50 */
+--alert-error-border: #fecaca; /* red-200 */
+--alert-error-text  : #991b1b; /* red-700 */
+
+/* ── Color context (maps to colors.css custom properties) ── */
+
+/* Brand */
+--c-brand-primary  : var(--ember);
+--c-brand-primary-hover: var(--ember-dark);
+--c-brand-light    : var(--ember-light);
+--c-brand-faint    : var(--ember-faint);
+
+/* Secondary / accent */
+--c-accent  : var(--saffron);
+--c-accent-light: var(--saffron-light);
+--c-success : var(--leaf);
+--c-success-light:var(--leaf-light);
+--c-info    : var(--sky);
+--c-info-light  : var(--sky-light);
+--c-purple  : var(--violet);
+--c-purple-light:var(--violet-light);
+--c-danger  : var(--danger);
+--c-danger-light:var(--danger-light);
+
+/* Neutral */
+--c-bg-page    : var(--slate-50);
+--c-text-body  : var(--slate-900);
+--c-text-muted : var(--slate-500);
+--c-text-heading: var(--slate-950);
+--c-border     : var(--slate-200);
+--c-border-dashed: var(--slate-300);
+--c-panel-bg   : var(--white);
+--c-panel-text : var(--slate-800);
+--c-spinner-track: var(--slate-200);
+--c-spinner-indicator: var(--ember);

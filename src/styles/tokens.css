@@ -1,0 +1,118 @@
+/* ───────────────────────────────────────────────────────────────
+   NUMERIC DESIGN TOKENS
+   Raw pixel / millisecond / numeric values used by all layout,
+   spacing, typography, shadow, animation and z-index rules.
+   ─────────────────────────────────────────────────────────────── */
+
+/* ── Spacing scale ── */
+:root {
+  --t-0:   0px;
+  --t-px:  1px;
+  --t-0-5: 2px;
+  --t-1:   4px;
+  --t-1-5: 6px;
+  --t-2:   8px;
+  --t-2-5: 10px;
+  --t-3:   12px;
+  --t-3-5: 14px;
+  --t-4:   16px;
+  --t-5:   20px;
+  --t-6:   24px;
+  --t-7:   28px;
+  --t-8:   32px;
+  --t-9:   36px;
+  --t-10:  40px;
+  --t-12:  48px;
+  --t-14:  56px;
+  --t-16:  64px;
+  --t-20:  80px;
+  --t-24:  96px;
+  --t-28:  112px;
+  --t-32:  128px;
+  --t-36:  144px;
+  --t-40:  160px;
+  --t-44:  176px;
+  --t-48:  192px;
+  --t-52:  208px;
+  --t-56:  224px;
+  --t-60:  240px;
+  --t-64:  256px;
+  --t-72:  288px;
+  --t-80:  320px;
+  --t-96:  384px;
+  --t-112: 448px;
+  --t-128: 512px;
+  --t-144: 576px;
+  --t-160: 640px;
+
+  /* ── Border Radius ── */
+  --r-none: 0px;
+  --r-sm:   2px;
+  --r-md:   6px;
+  --r-lg:   8px;
+  --r-xl:   12px;
+  --r-2xl:  16px;
+  --r-3xl:  24px;
+  --r-full: 9999px;
+
+  /* ── Shadows ── */
+  --shadow-sm:  0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md:  0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-soft: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+  /* ── Typography ── */
+  --text-xs:   0.75rem;   /* 12px */
+  --text-sm:   0.875rem;  /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg:   1.125rem;  /* 18px */
+  --text-xl:   1.25rem;   /* 20px */
+  --text-2xl:  1.5rem;    /* 24px */
+  --text-3xl:  1.875rem;  /* 30px */
+  --text-4xl:  2.25rem;   /* 36px */
+  --text-5xl:  3rem;      /* 48px */
+
+  --leading-none:  1;
+  --leading-tight: 1.25;
+  --leading-snug:  1.375;
+  --leading-normal:1.5;
+  --leading-relaxed:1.625;
+
+  --tracking-tighter:-0.05em;
+  --tracking-tight:  -0.025em;
+  --tracking-normal: 0em;
+  --tracking-wide:   0.025em;
+  --tracking-wider:  0.05em;
+
+  /* ── Font Weight ── */
+  --font-normal:   400;
+  --font-medium:   500;
+  --font-semibold: 600;
+  --font-bold:     700;
+  --font-extrabold:800;
+
+  /* ── Z-Index ── */
+  --z-base:    0;
+  --z-dropdown:10;
+  --z-sticky:  20;
+  --z-modal:   40;
+  --z-toast:   50;
+  --z-tooltip: 60;
+
+  /* ── Transitions ── */
+  --transition-fast:  150ms ease;
+  --transition-normal:200ms ease;
+  --transition-slow:  300ms ease;
+
+  /* ── Breakpoints (reference, not used directly in CSS) ── */
+  --bp-sm:   640px;
+  --bp-md:   768px;
+  --bp-lg:   1024px;
+  --bp-xl:   1280px;
+  --bp-2xl:  1536px;
+
+  /* ── Focus ring size ── */
+  --ring-size:  4px;
+  --ring-offset:1px;
+}
