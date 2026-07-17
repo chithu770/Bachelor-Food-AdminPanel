@@ -279,7 +279,7 @@ function OrderForm({ editingOrder, onCancel, onSubmit }) {
   );
 }
 
-function OrderCard({ order, onDelete, onEdit }) {
+function OrderCard({ order, onDelete, onEdit, onQuickUpdate }) {
   const [expanded, setExpanded] = useState(false);
   /* ── Resolve delivery address: Firestore `address` wins over legacy `deliveryAddress` ── */
   const displayAddress = order.address || order.deliveryAddress || "";
@@ -369,7 +369,7 @@ function OrderCard({ order, onDelete, onEdit }) {
 
       {expanded && (
         <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
-          {/* Row 2 – payment method (address is always visible above) */}
+          {/* Row 2 – payment method and quick actions */}
           <div className="grid gap-3 md:grid-cols-2">
             <div className="flex items-start gap-2 rounded-md bg-slate-50 p-2.5">
               <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-ember" />
@@ -377,6 +377,29 @@ function OrderCard({ order, onDelete, onEdit }) {
                 <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Payment method</p>
                 <p className="text-sm font-medium text-slate-800 capitalize">{order.paymentMethod || "—"}</p>
               </div>
+            </div>
+            
+            <div className="flex flex-col gap-1.5 rounded-md bg-slate-50 p-2.5">
+               <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Quick Actions</p>
+               <div className="flex flex-wrap gap-2">
+                  <select 
+                    className="input py-1 px-2 h-auto text-xs w-auto flex-1 cursor-pointer" 
+                    value={order.status || "pending"}
+                    onChange={(e) => onQuickUpdate(order.id, "status", e.target.value)}
+                  >
+                    {ORDER_STATUSES.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+                  </select>
+                  
+                  <select 
+                    className="input py-1 px-2 h-auto text-xs w-auto flex-1 cursor-pointer" 
+                    value={order.orderType || "delivery"}
+                    onChange={(e) => onQuickUpdate(order.id, "orderType", e.target.value)}
+                  >
+                    <option value="delivery">Delivery</option>
+                    <option value="takeaway">Takeaway</option>
+                    <option value="dine_in">Dine In</option>
+                  </select>
+               </div>
             </div>
           </div>
 
@@ -419,13 +442,18 @@ function OrderCard({ order, onDelete, onEdit }) {
                 <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-ember" />
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Payment status</p>
-                  <p className="mt-0.5">
-                    {order.paymentStatus ? (
-                      <span className={`badge text-xs ${payColors[order.paymentStatus] || "bg-slate-100 text-slate-600"}`}>
-                        {String(order.paymentStatus).charAt(0).toUpperCase() + String(order.paymentStatus).slice(1)}
-                      </span>
-                    ) : <span className="text-sm text-slate-400">—</span>}
-                  </p>
+                  <div className="mt-0.5">
+                    <select
+                      className={`input py-1 px-2 h-auto text-xs min-w-[100px] cursor-pointer font-semibold ${payColors[order.paymentStatus] || "bg-slate-100 text-slate-600"}`}
+                      value={order.paymentStatus || "pending"}
+                      onChange={(e) => onQuickUpdate(order.id, "paymentStatus", e.target.value)}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="paid">Paid</option>
+                      <option value="failed">Failed</option>
+                      <option value="refunded">Refunded</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               
@@ -475,14 +503,14 @@ function DetailBox({ label, value }) {
   );
 }
 
-function OrderList({ orders, loading, onDelete, onEdit }) {
+function OrderList({ orders, loading, onDelete, onEdit, onQuickUpdate }) {
   if (loading) return <LoadingSpinner label="Loading orders" />;
   if (!orders.length) return <div className="empty-state">No orders yet. Add your first order to get started.</div>;
 
   return (
     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
       {orders.map((order) => (
-        <OrderCard order={order} key={order.id} onDelete={onDelete} onEdit={onEdit} />
+        <OrderCard order={order} key={order.id} onDelete={onDelete} onEdit={onEdit} onQuickUpdate={onQuickUpdate} />
       ))}
     </div>
   );
@@ -585,6 +613,15 @@ export default function OrdersPage() {
     }
   }
 
+  async function handleQuickUpdate(orderId, field, value) {
+    try {
+      await updateOrder(orderId, { [field]: value });
+      setToast({ type: "success", message: `Order updated successfully` });
+    } catch (err) {
+      setToast({ type: "error", message: getFirebaseErrorMessage(err) });
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="page-header">
@@ -634,11 +671,11 @@ export default function OrdersPage() {
             { id: "all", label: "All" },
             { id: "scheduled", label: "Scheduled" },
             { id: "pending", label: "Pending" },
-            { id: "confirmed", label: "Accepted" },
-            { id: "preparing", label: "Processing" },
-            { id: "out_for_delivery", label: "Food On The Way" },
+            { id: "accepted", label: "Accepted" },
+            { id: "processing", label: "Processing" },
+            { id: "food_on_the_way", label: "Food On The Way" },
             { id: "delivered", label: "Delivered" },
-            { id: "cancelled", label: "Canceled" },
+            { id: "canceled", label: "Canceled" },
             { id: "failed", label: "Payment Failed" },
             { id: "refunded", label: "Refunded" },
             { id: "dine_in", label: "Dine In" },
@@ -661,7 +698,7 @@ export default function OrdersPage() {
           ))}
         </div>
 
-        <OrderList loading={loading} onDelete={setDeletingOrder} onEdit={setEditingOrder} orders={filteredOrders} />
+        <OrderList loading={loading} onDelete={setDeletingOrder} onEdit={setEditingOrder} onQuickUpdate={handleQuickUpdate} orders={filteredOrders} />
       </div>
 
       <ConfirmDialog

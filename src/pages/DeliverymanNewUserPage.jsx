@@ -58,9 +58,15 @@ export default function DeliverymanNewUserPage() {
 
   async function handleApprove(partner) {
     try {
-      await updateDeliveryPartner(partner.id, { status: "active" });
+      const updates = { 
+        status: "active",
+        approved: true,
+        isApproved: true,
+        approvedAt: new Date().toISOString()
+      };
+      await updateDeliveryPartner(partner.id, updates);
       setPartners((prev) =>
-        prev.map((p) => (p.id === partner.id ? { ...p, status: "active" } : p))
+        prev.map((p) => (p.id === partner.id ? { ...p, ...updates } : p))
       );
       setToast({ type: "success", message: "Delivery user approved" });
     } catch (err) {

@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { createHotel, deleteHotel, listenToHotels, updateHotel } from "../services/hotelService";
+import { createHotel, deleteHotel, listenToHotels, updateHotel, approveRestaurantRequest } from "../services/hotelService";
 import { getFirebaseErrorMessage } from "../utils/helpers";
 
-export function useHotels() {
+export function useHotels(isPending = false) {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const unsubscribe = listenToHotels(
+    const unsubscribe = listenToHotels(isPending,
       (items) => {
         setHotels(items);
         setLoading(false);
@@ -22,7 +22,7 @@ export function useHotels() {
       }
     );
     return unsubscribe;
-  }, []);
+  }, [isPending]);
 
   const stats = useMemo(
     () => ({
@@ -32,5 +32,9 @@ export function useHotels() {
     [hotels]
   );
 
-  return { hotels, loading, error, stats, createHotel, updateHotel, deleteHotel };
+  const wrappedCreateHotel = (hotel) => createHotel(isPending, hotel);
+  const wrappedUpdateHotel = (id, hotel) => updateHotel(isPending, id, hotel);
+  const wrappedDeleteHotel = (id) => deleteHotel(isPending, id);
+
+  return { hotels, loading, error, stats, createHotel: wrappedCreateHotel, updateHotel: wrappedUpdateHotel, deleteHotel: wrappedDeleteHotel, approveRestaurantRequest };
 }

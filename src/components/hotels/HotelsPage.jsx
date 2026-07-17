@@ -1,5 +1,6 @@
 import { Building2, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import DeleteHotelModal from "./DeleteHotelModal";
 import HotelForm from "./HotelForm";
 import HotelList from "./HotelList";
@@ -8,7 +9,10 @@ import { useHotels } from "../../hooks/useHotels";
 import { getFirebaseErrorMessage } from "../../utils/helpers";
 
 export default function HotelsPage() {
-  const { hotels, loading, error, stats, createHotel, updateHotel, deleteHotel } = useHotels();
+  const location = useLocation();
+  const isPendingPage = location.pathname.includes("/pending");
+
+  const { hotels, loading, error, stats, createHotel, updateHotel, deleteHotel, approveRestaurantRequest } = useHotels(isPendingPage);
   const [editingHotel, setEditingHotel] = useState(null);
   const [deletingHotel, setDeletingHotel] = useState(null);
   const [query, setQuery] = useState("");
@@ -16,8 +20,25 @@ export default function HotelsPage() {
 
   const filteredHotels = useMemo(() => {
     const keyword = query.toLowerCase();
-    return hotels.filter((hotel) => [hotel.name, hotel.location, hotel.type].join(" ").toLowerCase().includes(keyword));
-  }, [hotels, query]);
+    return hotels
+      .filter((h) => {
+        const status = h.status || "pending";
+        // If we are on pending page, it should fetch from restaurent_users where everything is technically a join request.
+        // We can still filter by status if we want, but it's not strictly necessary. Let's just return true since we fetch the specific collection.
+        if (isPendingPage) return status === "pending" || !h.status;
+        return true;
+      })
+      .filter((hotel) => [hotel.name, hotel.location, hotel.type].join(" ").toLowerCase().includes(keyword));
+  }, [hotels, query, isPendingPage]);
+
+  async function acceptHotel(hotel) {
+    try {
+      await approveRestaurantRequest(hotel.id, hotel);
+      setToast({ type: "success", message: "Restaurant join request accepted" });
+    } catch (err) {
+      setToast({ type: "error", message: getFirebaseErrorMessage(err) });
+    }
+  }
 
   async function saveHotel(values) {
     try {
@@ -49,12 +70,14 @@ export default function HotelsPage() {
       <div className="page-header">
         <div>
           <p className="eyebrow">Partner network</p>
-          <h1 className="page-title">Hotels</h1>
+          <h1 className="page-title">{isPendingPage ? "New Join Requests" : "Restaurants"}</h1>
         </div>
-        <a className="btn-primary" href="#hotel-form">
-          <Plus className="h-4 w-4" />
-          Add hotel
-        </a>
+        {!isPendingPage && (
+          <a className="btn-primary" href="#hotel-form" onClick={() => setEditingHotel({ status: "pending" })}>
+            <Plus className="h-4 w-4" />
+            Add restaurant
+          </a>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -70,10 +93,10 @@ export default function HotelsPage() {
 
       <div className="panel">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-bold text-slate-950">Partner list</h2>
-          <input className="input sm:max-w-xs" onChange={(event) => setQuery(event.target.value)} placeholder="Search hotels" value={query} />
+          <h2 className="text-lg font-bold text-slate-950">{isPendingPage ? "Pending Requests" : "Partner list"}</h2>
+          <input className="input sm:max-w-xs" onChange={(event) => setQuery(event.target.value)} placeholder="Search restaurants" value={query} />
         </div>
-        <HotelList hotels={filteredHotels} loading={loading} onDelete={setDeletingHotel} onEdit={setEditingHotel} />
+        <HotelList hotels={filteredHotels} loading={loading} onDelete={setDeletingHotel} onEdit={setEditingHotel} isPendingPage={isPendingPage} onAccept={acceptHotel} />
       </div>
 
       <DeleteHotelModal hotel={deletingHotel} onCancel={() => setDeletingHotel(null)} onConfirm={confirmDelete} />

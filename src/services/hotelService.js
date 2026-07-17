@@ -8,13 +8,15 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  updateDoc
+  updateDoc,
+  setDoc
 } from "../firebase/firestore";
 
-const hotelsRef = collection(db, "hotels");
-
-export function listenToHotels(onChange, onError) {
-  const q = query(hotelsRef, orderBy("createdAt", "desc"));
+export function listenToHotels(isPending, onChange, onError) {
+  const collectionName = isPending ? "restaurant_users" : "hotels";
+  const ref = collection(db, collectionName);
+  // If pending, avoid orderBy("createdAt") because new documents from the app might be missing this field, causing Firestore to hide them.
+  const q = isPending ? query(ref) : query(ref, orderBy("createdAt", "desc"));
   return onSnapshot(
     q,
     (snapshot) => {
@@ -31,8 +33,9 @@ export function listenToHotels(onChange, onError) {
   );
 }
 
-export function createHotel(hotel) {
-  return addDoc(hotelsRef, {
+export function createHotel(isPending, hotel) {
+  const collectionName = isPending ? "restaurant_users" : "hotels";
+  return addDoc(collection(db, collectionName), {
     ...hotel,
     rating: Number(hotel.rating || 4.5),
     createdAt: serverTimestamp(),
@@ -40,14 +43,40 @@ export function createHotel(hotel) {
   });
 }
 
-export function updateHotel(id, hotel) {
-  return updateDoc(doc(db, "hotels", id), {
+export function updateHotel(isPending, id, hotel) {
+  const collectionName = isPending ? "restaurant_users" : "hotels";
+  return updateDoc(doc(db, collectionName, id), {
     ...hotel,
     rating: Number(hotel.rating || 4.5),
     updatedAt: serverTimestamp()
   });
 }
 
-export function deleteHotel(id) {
-  return deleteDoc(doc(db, "hotels", id));
+export function deleteHotel(isPending, id) {
+  const collectionName = isPending ? "restaurant_users" : "hotels";
+  return deleteDoc(doc(db, collectionName, id));
+}
+
+export async function approveRestaurantRequest(id, hotelData) {
+  // Update the request status
+  await updateDoc(doc(db, "restaurant_users", id), {
+    status: "active",
+    approved: true,
+    isApproved: true,
+    approvedAt: serverTimestamp()
+  });
+  
+  // Clean up data for hotels collection (removing status stuff meant for join requests)
+  const cleanData = { ...hotelData };
+  delete cleanData.id;
+  
+  // Add to main hotels collection with the same ID
+  await setDoc(doc(db, "hotels", id), {
+    ...cleanData,
+    status: "active",
+    open: true,
+    rating: Number(hotelData.rating || 4.5),
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
 }

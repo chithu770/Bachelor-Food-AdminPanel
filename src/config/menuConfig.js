@@ -167,7 +167,11 @@ export const MENU_ITEMS = Object.freeze([
   },
 
   { section: "RESTAURANT & FOOD" },
-  { label: "Restaurants", to: "/restaurants", icon: Store, roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.MANAGER] },
+  { label: "Restaurants", icon: Store, roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.MANAGER], children: [
+      { label: "New Join Request", to: "/restaurants/pending", icon: UserCheck, badge: { value: 0, color: "bg-cyan-100 text-cyan-700" } },
+      { label: "List", to: "/restaurants", icon: Store }
+    ]
+  },
   { label: "Categories", to: "/food-categories", icon: FolderOpen, roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF] },
   { label: "Cuisines", to: "/cuisines", icon: UtensilsCrossed, roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF] },
   { label: "Foods", to: "/foods", icon: UtensilsCrossed, roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF] },

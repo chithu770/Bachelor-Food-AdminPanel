@@ -1,5 +1,6 @@
 import { Bike } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import Toast from "../components/common/Toast";
 import { useDeliveryPartners } from "../hooks/useDeliveryPartners";
@@ -12,11 +13,34 @@ export default function DeliveryPartnersPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState(null);
+  
+  const location = useLocation();
+  const isPendingPage = location.pathname.includes("/pending");
 
   const filteredPartners = useMemo(() => {
     const keyword = query.toLowerCase();
-    return partners.filter((p) => [p.displayName, p.email, p.phone].join(" ").toLowerCase().includes(keyword));
-  }, [partners, query]);
+    return partners
+      .filter((p) => {
+        const status = p.status || "pending";
+        if (isPendingPage) return status === "pending";
+        return status !== "pending";
+      })
+      .filter((p) => [p.displayName, p.email, p.phone].join(" ").toLowerCase().includes(keyword));
+  }, [partners, query, isPendingPage]);
+
+  async function acceptPartner(partner) {
+    try {
+      await updatePartner(partner.id, { 
+        status: "active", 
+        approved: true, 
+        isApproved: true,
+        approvedAt: new Date().toISOString()
+      });
+      setToast({ type: "success", message: "Delivery partner request accepted" });
+    } catch (err) {
+      setToast({ type: "error", message: getFirebaseErrorMessage(err) });
+    }
+  }
 
   async function savePartner(values) {
     try {
@@ -49,11 +73,13 @@ export default function DeliveryPartnersPage() {
       <div className="page-header flex justify-between items-center">
         <div>
           <p className="eyebrow">Delivery Management</p>
-          <h1 className="page-title">Delivery Partners</h1>
+          <h1 className="page-title">{isPendingPage ? "New Join Requests" : "Delivery Partners"}</h1>
         </div>
-        <button className="btn-primary" onClick={() => { setIsCreating(true); setEditingPartner({}); }}>
-          Add Delivery Partner
-        </button>
+        {!isPendingPage && (
+          <button className="btn-primary" onClick={() => { setIsCreating(true); setEditingPartner({ status: "pending" }); }}>
+            Add Delivery Partner
+          </button>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -91,8 +117,13 @@ export default function DeliveryPartnersPage() {
                 <div className="text-sm text-slate-500 mb-4">{partner.email}</div>
                 <div className="text-sm text-slate-500 mb-4">{partner.phone || "No phone"}</div>
                 <div className="mt-auto flex gap-2 pt-2 border-t border-slate-100">
+                  {isPendingPage ? (
+                    <button className="text-sm text-emerald-600 font-medium hover:underline flex-1 text-center" onClick={() => acceptPartner(partner)}>Accept</button>
+                  ) : null}
                   <button className="text-sm text-ember font-medium hover:underline flex-1 text-center" onClick={() => setEditingPartner(partner)}>Edit</button>
-                  <button className="text-sm text-red-600 font-medium hover:underline flex-1 text-center" onClick={() => setDeletingPartner(partner)}>Delete</button>
+                  <button className="text-sm text-red-600 font-medium hover:underline flex-1 text-center" onClick={() => setDeletingPartner(partner)}>
+                    {isPendingPage ? "Reject" : "Delete"}
+                  </button>
                 </div>
               </div>
             ))}
