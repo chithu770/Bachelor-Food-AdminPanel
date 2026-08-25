@@ -27,6 +27,7 @@ const initialValues = {
   paymentStatus: "pending",
   orderType: "delivery",
   isScheduled: false,
+  scheduledTime: "",
   notes: ""
 };
 
@@ -65,6 +66,7 @@ function OrderForm({ editingOrder, onCancel, onSubmit }) {
         paymentStatus: editingOrder.paymentStatus || "pending",
         orderType:     editingOrder.orderType     || "delivery",
         isScheduled:   editingOrder.isScheduled === true || editingOrder.scheduled === true || String(editingOrder.isScheduled) === "true" || String(editingOrder.scheduled) === "true",
+        scheduledTime: editingOrder.scheduledTime || "",
         notes:         editingOrder.notes         || ""
       });
     } else {
@@ -240,6 +242,12 @@ function OrderForm({ editingOrder, onCancel, onSubmit }) {
             <option value="true">Yes</option>
           </select>
         </label>
+        {values.isScheduled && (
+          <label className="field-label">
+            Scheduled Time
+            <input className="input" type="datetime-local" onChange={(e) => setValues({ ...values, scheduledTime: e.target.value })} value={values.scheduledTime} />
+          </label>
+        )}
         <label className="field-label">
           Delivery partner
           <select 
@@ -477,6 +485,16 @@ function OrderCard({ order, onDelete, onEdit, onQuickUpdate }) {
                 </div>
               </div>
             ) : null}
+
+            {(order.isScheduled === true || order.scheduled === true || String(order.isScheduled) === "true" || String(order.scheduled) === "true") && order.scheduledTime ? (
+              <div className="flex flex-wrap items-start gap-2 rounded-md bg-slate-50 px-3 py-2">
+                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-ember" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Scheduled Time</p>
+                  <p className="mt-0.5 text-sm font-semibold text-slate-700">{new Date(order.scheduledTime).toLocaleString()}</p>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {/* ── Actions ── */}
@@ -527,6 +545,9 @@ export default function OrdersPage() {
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState(null);
 
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
   const statusFilter = searchParams.get("status") || "all";
 
   useEffect(() => {
@@ -563,8 +584,26 @@ export default function OrdersPage() {
       else matchStatus = oStatus === statusFilter;
 
       if (!matchStatus) return false;
+
+      let matchDate = true;
+      if (dateFrom || dateTo) {
+        let orderDate = "";
+        if (order.createdAt) {
+          const d = order.createdAt.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
+          if (!isNaN(d.getTime())) {
+            orderDate = d.toISOString().split("T")[0];
+          }
+        }
+        if (orderDate) {
+          if (dateFrom && orderDate < dateFrom) matchDate = false;
+          if (dateTo && orderDate > dateTo) matchDate = false;
+        }
+      }
+      if (!matchDate) return false;
+
       
       const searchStr = [
+        order.id || "",
         order.customerName || "",
         order.customerPhone || "",
         order.customerEmail || "",
@@ -663,7 +702,11 @@ export default function OrdersPage() {
       <div className="panel">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-bold text-slate-950">Order list</h2>
-          <input className="input sm:max-w-xs" onChange={(e) => setQuery(e.target.value)} placeholder="Search orders" value={query} />
+          <div className="flex flex-wrap items-center gap-3">
+            <input className="input py-1.5 text-sm" onChange={(e) => setDateFrom(e.target.value)} placeholder="From date" type="date" value={dateFrom} />
+            <input className="input py-1.5 text-sm" onChange={(e) => setDateTo(e.target.value)} placeholder="To date" type="date" value={dateTo} />
+            <input className="input sm:max-w-xs" onChange={(e) => setQuery(e.target.value)} placeholder="Search orders" value={query} />
+          </div>
         </div>
 
         <div className="mb-5 flex flex-wrap gap-2 border-b border-slate-100 pb-3">

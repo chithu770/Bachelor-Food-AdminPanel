@@ -54,6 +54,11 @@ service cloud.firestore {
       );
     }
 
+    // ── Payments ──
+    match /payments/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
     // ── Subscriptions ──
     // Structure: subscriptions/{weekly_subscriptions|monthly_subscriptions|weekly_assignments}/documents/{docId}
     match /subscriptions/{planTypeDoc} {

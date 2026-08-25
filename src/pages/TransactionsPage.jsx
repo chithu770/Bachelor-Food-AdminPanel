@@ -2,7 +2,7 @@ import { Receipt, TrendingUp, TrendingDown, Filter } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { formatCurrency, getFirebaseErrorMessage } from "../utils/helpers";
-import { listenToOrders } from "../services/orderService";
+import { listenToPayments } from "../services/paymentService";
 
 function formatDateTime(val) {
   if (!val) return "—";
@@ -23,6 +23,8 @@ const statusMeta = {
   on_the_way: { label: "On the way", cls: "bg-violet-100 text-violet-700" },
   delivered: { label: "Delivered", cls: "bg-leaf/10 text-leaf" },
   cancelled: { label: "Cancelled", cls: "bg-rose-100 text-rose-700" },
+  success:   { label: "Success",   cls: "bg-leaf/10 text-leaf" },
+  failed:    { label: "Failed",    cls: "bg-rose-100 text-rose-700" },
 };
 
 export default function TransactionsPage() {
@@ -38,7 +40,7 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     setLoading(true);
-    const unsub = listenToOrders(
+    const unsub = listenToPayments(
       (items) => { setOrders(items); setLoading(false); setError(""); },
       (err) => { setError(getFirebaseErrorMessage(err)); setLoading(false); }
     );
@@ -60,9 +62,9 @@ export default function TransactionsPage() {
 
   const stats = useMemo(() => ({
     total: filtered.length,
-    revenue: filtered.filter((o) => o.status === "delivered").reduce((s, o) => s + Number(o.total || 0), 0),
-    refunded: filtered.filter((o) => o.status === "cancelled").reduce((s, o) => s + Number(o.total || 0), 0),
-    avgValue: filtered.length ? filtered.reduce((s, o) => s + Number(o.total || 0), 0) / filtered.length : 0,
+    revenue: filtered.filter((o) => o.status === "delivered" || o.status === "success").reduce((s, o) => s + Number(o.total || o.amount || 0), 0),
+    refunded: filtered.filter((o) => o.status === "cancelled" || o.status === "failed").reduce((s, o) => s + Number(o.total || o.amount || 0), 0),
+    avgValue: filtered.length ? filtered.reduce((s, o) => s + Number(o.total || o.amount || 0), 0) / filtered.length : 0,
   }), [filtered]);
 
   const paginated = useMemo(() => {
@@ -94,12 +96,12 @@ export default function TransactionsPage() {
         </div>
         <div className="metric">
           <TrendingUp className="h-5 w-5 text-leaf" />
-          <span>Revenue (delivered)</span>
+          <span>Revenue (success)</span>
           <strong className="text-leaf">{formatCurrency(stats.revenue)}</strong>
         </div>
         <div className="metric">
           <TrendingDown className="h-5 w-5 text-rose-500" />
-          <span>Lost (cancelled)</span>
+          <span>Lost (failed/cancelled)</span>
           <strong className="text-rose-600">{formatCurrency(stats.refunded)}</strong>
         </div>
         <div className="metric">
@@ -172,7 +174,7 @@ export default function TransactionsPage() {
                           <p className="text-xs text-slate-500">{o.customerPhone || ""}</p>
                         </td>
                         <td className="py-3 pr-4 text-slate-600">{o.restaurantName || o.hotelName || "—"}</td>
-                        <td className="py-3 pr-4 font-bold text-slate-950">{formatCurrency(o.total)}</td>
+                        <td className="py-3 pr-4 font-bold text-slate-950">{formatCurrency(o.total || o.amount)}</td>
                         <td className="py-3 pr-4">
                           <span className={`badge ${meta.cls}`}>{meta.label}</span>
                         </td>
