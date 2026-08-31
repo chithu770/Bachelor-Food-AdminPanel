@@ -21,8 +21,8 @@ export default function HotelCard({ hotel, onDelete, onEdit, isPendingPage, onAc
           <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-slate-400" />{hotel.phone}</p>
         </div>
         <div className="flex items-center justify-between">
-          <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${hotel.status === 'pending' || !hotel.status ? "bg-amber-50 text-amber-700" : hotel.open ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"}`}>
-            {hotel.status === 'pending' || !hotel.status ? "Pending" : hotel.open ? "Open" : "Closed"}
+          <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${isPendingPage ? "bg-amber-50 text-amber-700" : hotel.open ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+            {isPendingPage ? "Pending Request" : hotel.open ? "Open" : "Closed"}
           </span>
           <div className="flex gap-2">
             {isPendingPage && (

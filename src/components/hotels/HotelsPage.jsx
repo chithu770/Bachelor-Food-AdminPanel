@@ -22,11 +22,9 @@ export default function HotelsPage() {
     const keyword = query.toLowerCase();
     return hotels
       .filter((h) => {
-        const status = h.status || "pending";
-        // If we are on pending page, it should fetch from restaurent_users where everything is technically a join request.
-        // We can still filter by status if we want, but it's not strictly necessary. Let's just return true since we fetch the specific collection.
-        if (isPendingPage) return status === "pending" || !h.status;
-        return true;
+        const status = h.status || (isPendingPage ? "pending" : "active");
+        if (isPendingPage) return status === "pending";
+        return status !== "pending";
       })
       .filter((hotel) => [hotel.name, hotel.location, hotel.type].join(" ").toLowerCase().includes(keyword));
   }, [hotels, query, isPendingPage]);
@@ -65,6 +63,12 @@ export default function HotelsPage() {
     }
   }
 
+  const displayStats = useMemo(() => ({
+    count: filteredHotels.length,
+    averageRating: filteredHotels.length ? filteredHotels.reduce((sum, hotel) => sum + Number(hotel.rating || 0), 0) / filteredHotels.length : 0,
+    openNow: filteredHotels.filter((h) => h.open).length
+  }), [filteredHotels]);
+
   return (
     <div className="space-y-6">
       <div className="page-header">
@@ -72,18 +76,16 @@ export default function HotelsPage() {
           <p className="eyebrow">Partner network</p>
           <h1 className="page-title">{isPendingPage ? "New Join Requests" : "Restaurants"}</h1>
         </div>
-        {!isPendingPage && (
-          <a className="btn-primary" href="#hotel-form" onClick={() => setEditingHotel({ status: "pending" })}>
-            <Plus className="h-4 w-4" />
-            Add restaurant
-          </a>
-        )}
+        <a className="btn-primary" href="#hotel-form" onClick={() => setEditingHotel({ status: "pending" })}>
+          <Plus className="h-4 w-4" />
+          Add {isPendingPage ? "pending request" : "restaurant"}
+        </a>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="metric"><Building2 className="h-5 w-5 text-ember" /><span>Total hotels</span><strong>{stats.count}</strong></div>
-        <div className="metric"><span>Average rating</span><strong>{stats.averageRating.toFixed(1)}</strong></div>
-        <div className="metric"><span>Open now</span><strong>{hotels.filter((item) => item.open).length}</strong></div>
+        <div className="metric"><Building2 className="h-5 w-5 text-ember" /><span>{isPendingPage ? "Total requests" : "Total hotels"}</span><strong>{displayStats.count}</strong></div>
+        <div className="metric"><span>Average rating</span><strong>{displayStats.averageRating.toFixed(1)}</strong></div>
+        <div className="metric"><span>Open now</span><strong>{displayStats.openNow}</strong></div>
       </div>
 
       {error ? <div className="alert">{error}</div> : null}

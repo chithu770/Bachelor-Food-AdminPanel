@@ -34,9 +34,10 @@ export function listenToHotels(isPending, onChange, onError) {
 }
 
 export function createHotel(isPending, hotel) {
-  const collectionName = isPending ? "restaurant_users" : "hotels";
-  return addDoc(collection(db, collectionName), {
+  // All new hotels must go through the pending flow, regardless of where they are added from.
+  return addDoc(collection(db, "restaurant_users"), {
     ...hotel,
+    status: "pending",
     rating: Number(hotel.rating || 4.5),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()

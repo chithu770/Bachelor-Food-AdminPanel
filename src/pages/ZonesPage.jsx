@@ -1,9 +1,10 @@
-import { Plus, MapPin, Edit2, Trash2 } from "lucide-react";
+import { Plus, MapPin, Edit2, Trash2, Map } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import Toast from "../components/common/Toast";
 import { useZones } from "../hooks/useZones";
 import { getFirebaseErrorMessage } from "../utils/helpers";
+import ZoneMap from "../components/zones/ZoneMap";
 
 const ZONE_COLORS = [
   "c-ember",
@@ -17,7 +18,7 @@ const ZONE_COLORS = [
 
 const defaultValues = {
   name: "",
-  pincodes: "",
+  coordinates: [],
   deliveryFee: "",
   estimatedTime: ""
 };
@@ -60,7 +61,7 @@ export default function ZonesPage() {
   const filtered = useMemo(() => {
     const kw = query.toLowerCase();
     return zones.filter((z) =>
-      [z.name, (z.pincodes || []).join(" "), z.estimatedTime || ""]
+      [z.name, z.estimatedTime || ""]
         .join(" ")
         .toLowerCase()
         .includes(kw)
@@ -71,24 +72,20 @@ export default function ZonesPage() {
     e.preventDefault();
     const nextErrors = {};
     if (!values.name.trim()) nextErrors.name = "Name is required.";
-    if (!values.pincodes.trim()) nextErrors.pincodes = "At least one pincode is required.";
+    if (!values.coordinates || values.coordinates.length < 3) nextErrors.coordinates = "Please draw a valid zone area on the map.";
     if (values.deliveryFee === "" || isNaN(Number(values.deliveryFee)))
       nextErrors.deliveryFee = "A valid delivery fee is required.";
     if (!values.estimatedTime.trim()) nextErrors.estimatedTime = "Estimated time is required.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
-    const pincodeList = values.pincodes
-      .split(",")
-      .map((p) => p.trim())
-      .filter(Boolean);
-
     const payload = {
       name: values.name.trim(),
       description: values.description?.trim() || "",
-      pincodes: pincodeList,
+      coordinates: values.coordinates,
       deliveryFee: Number(values.deliveryFee),
-      estimatedTime: values.estimatedTime.trim()
+      estimatedTime: values.estimatedTime.trim(),
+      status: true
     };
 
     setSubmitting(true);
@@ -125,7 +122,7 @@ export default function ZonesPage() {
       <div className="page-header">
         <div>
           <p className="eyebrow">Delivery configuration</p>
-          <h1 className="page-title">Zones</h1>
+          <h1 className="page-title">Zones Setup</h1>
         </div>
         <a className="btn-primary" href="#zone-form">
           <Plus className="h-4 w-4" />
@@ -143,15 +140,16 @@ export default function ZonesPage() {
 
       {error ? <div className="alert">{error}</div> : null}
       <div id="zone-form">
-        <form className="panel space-y-4" onSubmit={handleSubmit}>
+        <form className="panel space-y-6" onSubmit={handleSubmit}>
           <div>
             <h2 className="text-lg font-bold text-slate-950">
               {editingZone ? "Edit zone" : "Add zone"}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Define a delivery zone with pincodes, fee, and estimated delivery time.
+              Define a delivery zone by drawing on the map.
             </p>
           </div>
+          
           <div className="grid gap-4 md:grid-cols-2">
             <label className="field-label">
               Zone name
@@ -177,22 +175,7 @@ export default function ZonesPage() {
               ) : null}
             </label>
 
-            <label className="field-label">
-              Pincodes
-              <input
-                className="input"
-                onChange={(e) => setValues({ ...values, pincodes: e.target.value })}
-                placeholder="560034, 560035, 560036"
-                value={values.pincodes}
-              />
-              {errors.pincodes ? (
-                <span className="field-error">{errors.pincodes}</span>
-              ) : (
-                <span className="field-error">Separate multiple pincodes with commas.</span>
-              )}
-            </label>
-
-            <label className="field-label">
+            <label className="field-label md:col-span-2">
               Delivery fee (INR)
               <input
                 className="input"
@@ -207,6 +190,20 @@ export default function ZonesPage() {
                 <span className="field-error">{errors.deliveryFee}</span>
               ) : null}
             </label>
+            
+            <div className="field-label md:col-span-2">
+              <div className="mb-2 flex items-center justify-between">
+                 <span>Zone Area Map</span>
+                 <span className="text-xs font-normal text-slate-500">Click the polygon tool on the right to draw.</span>
+              </div>
+              <ZoneMap 
+                coordinates={values.coordinates} 
+                onCoordinatesChange={(coords) => setValues({ ...values, coordinates: coords })}
+              />
+              {errors.coordinates ? (
+                <span className="field-error mt-1">{errors.coordinates}</span>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex flex-wrap justify-end gap-3">
@@ -250,8 +247,6 @@ export default function ZonesPage() {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((zone) => {
               const colorClass = getZoneColor(zone.name);
-              const pincodesDisplay = (zone.pincodes || []).slice(0, 4).join(", ");
-              const pincodesExtra = Math.max(0, (zone.pincodes || []).length - 4);
               return (
                 <div key={zone.id} className="card p-5 flex flex-col h-full">
                   <div className="flex items-start justify-between gap-3 flex-1">
@@ -269,13 +264,14 @@ export default function ZonesPage() {
                       <p className="text-sm font-bold text-slate-700">
                         {TIME_LABEL(zone.estimatedTime)}
                       </p>
-                      <p className="mt-2 text-xs font-semibold text-slate-500">
-                        Pincodes ({zone.pincodes?.length || 0}):
+                      <p className="mt-2 text-xs font-semibold text-slate-500 flex items-center gap-1">
+                        <Map className="h-3 w-3" /> Map Coordinates:
                       </p>
-                      <p className="line-clamp-1 text-sm text-slate-600">
-                        {pincodesDisplay}
-                        {pincodesExtra > 0 && (
-                          <span className="font-semibold"> +{pincodesExtra} more</span>
+                      <p className="text-sm text-slate-600">
+                        {zone.coordinates && zone.coordinates.length > 0 ? (
+                           <span className="text-emerald-600 font-medium">{zone.coordinates.length} points defined</span>
+                        ) : (
+                           <span className="text-slate-400 italic">No coordinates</span>
                         )}
                       </p>
                     </div>
@@ -286,7 +282,10 @@ export default function ZonesPage() {
                   <div className="mt-auto pt-4 border-t border-slate-100 flex justify-end gap-2">
                     <button
                       className="icon-action"
-                      onClick={() => setEditingZone(zone)}
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setEditingZone(zone);
+                      }}
                       title="Edit"
                       type="button"
                     >

@@ -167,6 +167,7 @@ export const MENU_ITEMS = Object.freeze([
   },
 
   { section: "RESTAURANT & FOOD" },
+  { label: "Zone Setup", to: "/zone-setup", icon: MapPin, roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.MANAGER] },
   { label: "Restaurants", icon: Store, roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.MANAGER], children: [
       { label: "New Join Request", to: "/restaurants/pending", icon: UserCheck, badge: { value: 0, color: "bg-cyan-100 text-cyan-700" } },
       { label: "List", to: "/restaurants", icon: Store }
