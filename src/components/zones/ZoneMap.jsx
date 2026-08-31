@@ -1,10 +1,74 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { MapContainer, TileLayer, FeatureGroup, Polygon, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, FeatureGroup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-window.L = L;
-import { EditControl } from 'react-leaflet-draw';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-draw';
 import 'leaflet-draw/dist/leaflet.draw.css';
+
+window.L = L;
+
+function EditControl({ position = 'topright', onCreated, onEdited, onDeleted, draw, featureGroupRef }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !L.Draw || !featureGroupRef?.current) return undefined;
+
+    const options = {
+      position,
+      edit: {
+        featureGroup: featureGroupRef.current,
+        remove: true
+      },
+      draw: {
+        rectangle: false,
+        circle: false,
+        circlemarker: false,
+        marker: false,
+        polyline: false,
+        polygon: {
+          allowIntersection: false,
+          drawError: {
+            color: '#e1e100',
+            message: '<strong>Oh snap!<strong> you can\'t draw that!'
+          },
+          shapeOptions: {
+            color: '#f06548'
+          }
+        }
+      }
+    };
+
+    if (draw) {
+      options.draw = { ...options.draw, ...draw };
+    }
+
+    const control = new L.Control.Draw(options);
+    map.addControl(control);
+
+    const createdHandler = (event) => {
+      if (onCreated) onCreated(event);
+    };
+    const editedHandler = (event) => {
+      if (onEdited) onEdited(event);
+    };
+    const deletedHandler = (event) => {
+      if (onDeleted) onDeleted(event);
+    };
+
+    map.on(L.Draw.Event.CREATED, createdHandler);
+    map.on(L.Draw.Event.EDITED, editedHandler);
+    map.on(L.Draw.Event.DELETED, deletedHandler);
+
+    return () => {
+      map.off(L.Draw.Event.CREATED, createdHandler);
+      map.off(L.Draw.Event.EDITED, editedHandler);
+      map.off(L.Draw.Event.DELETED, deletedHandler);
+      map.removeControl(control);
+    };
+  }, [draw, featureGroupRef, map, onCreated, onDeleted, onEdited, position]);
+
+  return null;
+}
 
 // Fix for default marker icons in leaflet
 delete L.Icon.Default.prototype._getIconUrl;
