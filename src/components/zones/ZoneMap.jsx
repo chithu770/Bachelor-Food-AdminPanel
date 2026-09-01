@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, FeatureGroup, Polygon, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -90,7 +90,7 @@ function MapEffect({ coordinates }) {
 }
 
 export default function ZoneMap({ coordinates, onCoordinatesChange, center = [23.8103, 90.4125], zoom = 12 }) {
-  const [mapCenter, setMapCenter] = useState(center);
+  const [mapCenter] = useState(center);
   const [featureGroup, setFeatureGroup] = useState(null);
 
   const handleCreated = (e) => {
