@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { MapContainer, TileLayer, FeatureGroup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, FeatureGroup, Polygon, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw';
@@ -7,16 +7,16 @@ import 'leaflet-draw/dist/leaflet.draw.css';
 
 window.L = L;
 
-function EditControl({ position = 'topright', onCreated, onEdited, onDeleted, draw, featureGroupRef }) {
+function EditControl({ position = 'topright', onCreated, onEdited, onDeleted, draw, featureGroup }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!map || !L.Draw || !featureGroupRef?.current) return undefined;
+    if (!map || !L.Draw || !featureGroup) return undefined;
 
     const options = {
       position,
       edit: {
-        featureGroup: featureGroupRef.current,
+        featureGroup: featureGroup,
         remove: true
       },
       draw: {
@@ -65,7 +65,7 @@ function EditControl({ position = 'topright', onCreated, onEdited, onDeleted, dr
       map.off(L.Draw.Event.DELETED, deletedHandler);
       map.removeControl(control);
     };
-  }, [draw, featureGroupRef, map, onCreated, onDeleted, onEdited, position]);
+  }, [draw, featureGroup, map, onCreated, onDeleted, onEdited, position]);
 
   return null;
 }
@@ -91,7 +91,7 @@ function MapEffect({ coordinates }) {
 
 export default function ZoneMap({ coordinates, onCoordinatesChange, center = [23.8103, 90.4125], zoom = 12 }) {
   const [mapCenter, setMapCenter] = useState(center);
-  const featureGroupRef = useRef();
+  const [featureGroup, setFeatureGroup] = useState(null);
 
   const handleCreated = (e) => {
     const { layerType, layer } = e;
@@ -100,13 +100,11 @@ export default function ZoneMap({ coordinates, onCoordinatesChange, center = [23
       const newCoords = latLngs.map(latlng => ({ lat: latlng.lat, lng: latlng.lng }));
       onCoordinatesChange(newCoords);
       
-      // Remove other layers to only keep one polygon
-      const fg = featureGroupRef.current;
-      fg.eachLayer(l => {
-        if (l !== layer) {
-          fg.removeLayer(l);
-        }
-      });
+      // We rely on React to render the Polygon component when state updates.
+      // If leaflet-draw attached any temporary layers to the feature group, we clear them.
+      if (featureGroup && featureGroup.hasLayer(layer)) {
+        featureGroup.removeLayer(layer);
+      }
     }
   };
 
@@ -123,28 +121,13 @@ export default function ZoneMap({ coordinates, onCoordinatesChange, center = [23
     onCoordinatesChange([]);
   };
 
-  // We only render Polygon if the drawing tools haven't drawn it yet, 
-  // but to keep it simple, if coordinates exist we show them, 
-  // but if the user starts drawing, leaflet-draw takes over.
-  // When editing an existing zone, we need to load it into the feature group.
-
   useEffect(() => {
-    // When coordinates are loaded from props (e.g. editing a zone),
-    // and if there's no layer in featureGroup, we can add a polygon layer manually.
-    // However, react-leaflet-draw works best if we just let the <Polygon> render
-    // or manually add it to the featureGroup so it's editable.
-    if (featureGroupRef.current && coordinates && coordinates.length > 0) {
-      const fg = featureGroupRef.current;
-      // If feature group is empty, we add the polygon
-      if (Object.keys(fg._layers).length === 0) {
-         const polygon = L.polygon(coordinates, { color: '#f06548' });
-         fg.addLayer(polygon);
-      }
-    } else if (featureGroupRef.current && (!coordinates || coordinates.length === 0)) {
-       const fg = featureGroupRef.current;
-       fg.clearLayers();
+    // When coordinates are empty, ensure we clear any orphan layers in the feature group.
+    // The declarative <Polygon> will handle rendering when coordinates are present.
+    if (featureGroup && (!coordinates || coordinates.length === 0)) {
+       featureGroup.clearLayers();
     }
-  }, [coordinates]);
+  }, [coordinates, featureGroup]);
 
   return (
     <div style={{ height: '400px', width: '100%', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0', zIndex: 0 }}>
@@ -153,8 +136,9 @@ export default function ZoneMap({ coordinates, onCoordinatesChange, center = [23
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FeatureGroup ref={featureGroupRef}>
+        <FeatureGroup ref={setFeatureGroup}>
           <EditControl
+            featureGroup={featureGroup}
             position="topright"
             onCreated={handleCreated}
             onEdited={handleEdited}
@@ -177,6 +161,9 @@ export default function ZoneMap({ coordinates, onCoordinatesChange, center = [23
               }
             }}
           />
+          {coordinates && coordinates.length > 0 && (
+            <Polygon positions={coordinates} color="#f06548" />
+          )}
         </FeatureGroup>
         <MapEffect coordinates={coordinates} />
       </MapContainer>
