@@ -13,7 +13,7 @@ createRoot(document.getElementById("root")).render(
     null,
     React.createElement(
       BrowserRouter,
-      null,
+      { future: { v7_startTransition: true, v7_relativeSplatPath: true } },
       React.createElement(
         AuthProvider,
         null,
